@@ -8,7 +8,11 @@ ITEM_ID = "MLB6864663498"
 
 url = f"https://api.mercadolibre.com/items/{ITEM_ID}"
 
-resposta = requests.get(url)
+headers = {
+    "User-Agent": "Mozilla/5.0"
+}
+
+resposta = requests.get(url, headers=headers)
 
 if resposta.status_code == 200:
     dados = resposta.json()

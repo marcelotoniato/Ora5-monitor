@@ -4,37 +4,41 @@ import requests
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 CHAT_ID = os.environ["CHAT_ID"]
 
-ITEM_ID = "MLB6864663498"
-
-url = f"https://api.mercadolibre.com/items/{ITEM_ID}"
+URL = "https://carro.mercadolivre.com.br/MLB-6864663498-ora-5-_JM"
 
 headers = {
     "User-Agent": "Mozilla/5.0"
 }
 
-resposta = requests.get(url, headers=headers)
+pagina = requests.get(URL, headers=headers)
 
-if resposta.status_code == 200:
-    dados = resposta.json()
-    status = dados.get("status", "").lower()
+texto = pagina.text.lower()
 
-    if status == "active":
-        mensagem = "✅ O anúncio do ORA 5 continua ATIVO."
-    else:
-        mensagem = (
-            f"🚨 ATENÇÃO!\n\n"
-            f"O anúncio mudou de status.\n"
-            f"Status: {status}"
-        )
-else:
-    mensagem = f"❌ Erro ao consultar o anúncio. Código: {resposta.status_code}"
+alerta = False
+mensagem = ""
 
-requests.post(
-    f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
-    data={
-        "chat_id": CHAT_ID,
-        "text": mensagem
-    }
-)
+# anúncio saiu do ar
+if (
+    "página não encontrada" in texto
+    or "pagina nao encontrada" in texto
+    or "este anúncio terminou" in texto
+    or "este anúncio foi finalizado" in texto
+):
+    alerta = True
+    mensagem = "🚨 O anúncio do ORA 5 foi encerrado ou removido."
 
-print(mensagem)
+# preço mudou
+elif "159.900" not in texto and "159900" not in texto:
+    alerta = True
+    mensagem = "💰 O preço do ORA 5 mudou."
+
+if alerta:
+    requests.post(
+        f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
+        data={
+            "chat_id": CHAT_ID,
+            "text": mensagem + "\n\n" + URL
+        }
+    )
+
+print(mensagem if alerta else "Sem alterações.")

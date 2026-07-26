@@ -1,48 +1,28 @@
-import os
-import requests
-from playwright.sync_api import sync_playwright
+name: Monitor ORA 5
 
-BOT_TOKEN = os.environ["BOT_TOKEN"]
-CHAT_ID = os.environ["CHAT_ID"]
+on:
+  schedule:
+    - cron: "*/1 * * * *"
+  workflow_dispatch:
 
-URL = "https://carro.mercadolivre.com.br/MLB-6864663498-ora-5-_JM"
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
 
+    steps:
+      - name: Baixar repositorio
+        uses: actions/checkout@v4
 
-def enviar_telegram(mensagem):
-    requests.post(
-        f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
-        data={
-            "chat_id": CHAT_ID,
-            "text": mensagem
-        }
-    )
+      - name: Instalar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
 
-with sync_playwright() as p:
-    navegador = p.chromium.launch(headless=True)
-
-    pagina = navegador.new_page()
-
-    try:
-        pagina.goto(URL, timeout=60000)
-
-        texto = pagina.text_content("body").lower()
-
-        if (
-            "comprar" not in texto
-            and "reservar" not in texto
-            and "tenho interesse" not in texto
-        ):
-            enviar_telegram(
-                "🚨 Atenção!\n\n"
-                "O anúncio do ORA 5 pode ter mudado de status.\n\n"
-                f"{URL}"
-            )
-
-        else:
-            print("Sem alterações.")
-
-    except Exception as erro:
-        print("Erro:", erro)
-
-    navegador.close()
+      - name: Executar monitor
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+        run: python monitor.py

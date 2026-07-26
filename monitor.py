@@ -4,30 +4,26 @@ import requests
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 CHAT_ID = os.environ["CHAT_ID"]
 
-URL = "https://carro.mercadolivre.com.br/MLB-6864663498-ora-5-_JM"
+ITEM_ID = "MLB6864663498"
 
-headers = {
-    "User-Agent": "Mozilla/5.0"
-}
+url = f"https://api.mercadolibre.com/items/{ITEM_ID}"
 
-pagina = requests.get(URL, headers=headers)
+resposta = requests.get(url)
 
-texto = pagina.text.lower()
+if resposta.status_code == 200:
+    dados = resposta.json()
+    status = dados.get("status", "").lower()
 
-if (
-    "pausado" in texto
-    or "finalizado" in texto
-    or "vendido" in texto
-    or "não está disponível" in texto
-    or "nao esta disponivel" in texto
-):
-    mensagem = (
-        "🚨 Atenção!\n\n"
-        "O anúncio do ORA 5 mudou de status.\n"
-        f"{URL}"
-    )
+    if status == "active":
+        mensagem = "✅ O anúncio do ORA 5 continua ATIVO."
+    else:
+        mensagem = (
+            f"🚨 ATENÇÃO!\n\n"
+            f"O anúncio mudou de status.\n"
+            f"Status: {status}"
+        )
 else:
-    mensagem = "✅ O anúncio do ORA 5 continua ativo."
+    mensagem = f"❌ Erro ao consultar o anúncio. Código: {resposta.status_code}"
 
 requests.post(
     f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
